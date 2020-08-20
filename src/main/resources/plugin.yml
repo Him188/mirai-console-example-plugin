@@ -1,0 +1,3 @@
+name: "MyPlugin"
+main: "org.example.myplugin.MyPluginMain"
+version: "1.0.0"
