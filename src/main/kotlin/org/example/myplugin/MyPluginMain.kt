@@ -21,7 +21,7 @@ object MyPluginMain : KotlinPlugin() {
     object MyCommandOwner : PluginCommandOwner(MyPluginMain)
 
     override fun onEnable() {
-        file("test.txt").writeText("123") // 在 data/插件名/ 创建 "text.txt" 文件, 写入内容 "Hello"
+        file("test.txt").writeText("123") // 在 data/插件名/ 创建 "text.txt" 文件, 写入内容 "123"
 
         logger.info { "Hi: ${MySetting.name}" } // 输出一条日志.
         logger.info("Hi: ${MySetting.name}") // 输出一条日志. 与上面一条相同, 但更推荐上面一条.
