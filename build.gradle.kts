@@ -18,10 +18,17 @@ kotlin.sourceSets.all {
 
 dependencies {
     compileOnly(kotlin("stdlib-jdk8"))
-    val console = "1.0-M2-1"
+
+    val core = "1.2.2"
+    val console = "1.0-M3"
+
     compileOnly("net.mamoe:mirai-console:$console")
-    compileOnly("net.mamoe:mirai-console-pure:$console")
-    compileOnly("net.mamoe:mirai-core:1.2.1")
+    compileOnly("net.mamoe:mirai-core:$core")
+
+    testImplementation("net.mamoe:mirai-console:$console")
+    testImplementation("net.mamoe:mirai-core:$core")
+    testImplementation("net.mamoe:mirai-console-pure:$console")
+    testImplementation(kotlin("stdlib-jdk8"))
 }
 
 kotlin.target.compilations.all {

@@ -1,15 +1,16 @@
 package org.example.myplugin
 
 import kotlinx.serialization.Serializable
-import net.mamoe.mirai.console.command.*
+import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.unregister
+import net.mamoe.mirai.console.command.CommandPermission
+import net.mamoe.mirai.console.command.CommandSender
+import net.mamoe.mirai.console.command.CompositeCommand
+import net.mamoe.mirai.console.command.SimpleCommand
+import net.mamoe.mirai.console.data.*
+import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
-import net.mamoe.mirai.console.plugin.jvm.loadSetting
-import net.mamoe.mirai.console.setting.Setting
-import net.mamoe.mirai.console.setting.getValue
-import net.mamoe.mirai.console.setting.setValue
-import net.mamoe.mirai.console.setting.value
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
@@ -17,17 +18,16 @@ import net.mamoe.mirai.utils.info
 
 object MyPluginMain : KotlinPlugin() {
 
-    // 这个 PluginCommandOwner 可能会在 1.0-M3 修改.
-    object MyCommandOwner : PluginCommandOwner(MyPluginMain)
-
     override fun onEnable() {
-        file("test.txt").writeText("123") // 在 data/插件名/ 创建 "text.txt" 文件, 写入内容 "Hello"
+        MySetting.reload() // 从数据库自动读取配置实例
+        MyPluginData.reload()
 
         logger.info { "Hi: ${MySetting.name}" } // 输出一条日志.
         logger.info("Hi: ${MySetting.name}") // 输出一条日志. 与上面一条相同, 但更推荐上面一条.
         logger.verbose("Hi: ${MySetting.name}") // 多种日志级别可选
 
-        // 请不要使用 println, System.out.println 等标注输出方式. 请总是使用 logger.
+        // 请不要使用 println, System.out.println 等标准输出方式. 请总是使用 logger.
+
 
         MySetting.count++ // 对 Setting 的改动会自动在合适的时间保存
 
@@ -39,9 +39,23 @@ object MyPluginMain : KotlinPlugin() {
     }
 }
 
+// 定义插件数据
+// 插件
+object MyPluginData : AutoSavePluginData() {
+    var list: MutableList<String> by value(mutableListOf("a", "b")) // mutableListOf("a", "b") 是初始值, 可以省略
+    var long: Long by value(0L) // 允许 var
+    var int by value(0) // 可以使用类型推断, 但更推荐使用 `var long: Long by value(0)` 这种定义方式.
+
+
+    // 可将 MutableMap<Long, Long> 映射到 MutableMap<Bot, Long>.
+    // mapKeys 还未稳定, 可能会发生修改. 预计在 1.0-RC 发布稳定版本.
+    val botToLongMap: MutableMap<Bot, Long> by value<MutableMap<Long, Long>>().mapKeys(Bot::getInstance, Bot::id)
+}
+
 // 定义一个配置. 所有属性都会被追踪修改, 并自动保存.
 // 配置是插件与用户交互的接口, 但不能用来保存插件的数据.
-object MySetting : Setting by MyPluginMain.loadSetting() {
+// 此 API 还未稳定, 可能会发生修改. 预计在 1.0-RC 发布稳定版本.
+object MySetting : AutoSavePluginConfig() {
     val name by value("test")
 
     var count by value(0)
@@ -55,7 +69,7 @@ data class MyData(
 
 // 简单指令
 object MySimpleCommand : SimpleCommand(
-    MyPluginMain.MyCommandOwner, "foo",
+    MyPluginMain, "foo",
     description = "示例指令"
 ) {
     // 通过 /foo 调用, 参数自动解析
@@ -69,7 +83,7 @@ object MySimpleCommand : SimpleCommand(
 // 复合指令
 @OptIn(ConsoleExperimentalAPI::class)
 object MyCompositeCommand : CompositeCommand(
-    MyPluginMain.MyCommandOwner, "manage",
+    MyPluginMain, "manage",
     description = "示例指令", permission = MyCustomPermission,
     // prefixOptional = true // 还有更多参数可填, 此处忽略
 ) {
@@ -99,6 +113,7 @@ object MyCompositeCommand : CompositeCommand(
         sendMessage("/manage list 被调用了")
     }
 
+    @Permission(CommandPermission.Operator::class) // 可额外要求一个权限
     // 支持 Image 类型, 需在聊天中执行此指令.
     @SubCommand
     suspend fun CommandSender.test(image: Image) { // 执行 "/manage test <一张图片>" 时调用这个函数
