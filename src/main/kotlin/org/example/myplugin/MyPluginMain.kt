@@ -1,5 +1,6 @@
 package org.example.myplugin
 
+import com.google.auto.service.AutoService
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
@@ -10,13 +11,21 @@ import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.console.data.*
 import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
+import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.console.plugin.jvm.SimpleJvmPluginDescription
 import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.info
 
-object MyPluginMain : KotlinPlugin() {
+@AutoService(JvmPlugin::class)
+object MyPluginMain : KotlinPlugin(
+    SimpleJvmPluginDescription(
+        "MyPlugin",
+        "0.1.0"
+    )
+) {
 
     override fun onEnable() {
         MySetting.reload() // 从数据库自动读取配置实例
@@ -59,11 +68,12 @@ object MySetting : AutoSavePluginConfig() {
     val name by value("test")
 
     var count by value(0)
+
+    val nested by value<MyNestedData>() // 嵌套类型是支持的
 }
 
-// 插件的数据. console 不提供
 @Serializable
-data class MyData(
+data class MyNestedData(
     val list: List<String>
 )
 
@@ -122,7 +132,7 @@ object MyCompositeCommand : CompositeCommand(
 }
 
 
-// 定义自定义指令权限判断
+// 定义自定义指令权限判断, 注意, CommandPermission 可能会在 1.0-M4 或 1.0-RC 变动
 object MyCustomPermission : CommandPermission {
     override fun CommandSender.hasPermission(): Boolean {
         // 高自由度的权限判定

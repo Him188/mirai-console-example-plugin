@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.4.0"
     kotlin("plugin.serialization") version "1.4.0"
+    kotlin("kapt") version "1.4.0"
     id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
@@ -20,10 +21,14 @@ dependencies {
     compileOnly(kotlin("stdlib-jdk8"))
 
     val core = "1.2.2"
-    val console = "1.0-M3-1"
+    val console = "1.0-M4-dev-3"
 
     compileOnly("net.mamoe:mirai-console:$console")
     compileOnly("net.mamoe:mirai-core:$core")
+
+    val autoService = "1.0-rc7"
+    kapt("com.google.auto.service", "auto-service", autoService)
+    compileOnly("com.google.auto.service", "auto-service-annotations", autoService)
 
     testImplementation("net.mamoe:mirai-console:$console")
     testImplementation("net.mamoe:mirai-core:$core")
