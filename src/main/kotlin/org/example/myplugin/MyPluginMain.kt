@@ -97,8 +97,10 @@ object MySimpleCommand : SimpleCommand(
     MyPluginMain, "foo",
     description = "示例指令"
 ) {
-    // 通过 /foo 调用, 参数自动解析
+    // 会自动创建一个 ID 为 "org.example.example-plugin:command.foo" 的权限.
 
+
+    // 通过 /foo 调用, 参数自动解析
     @Handler
     suspend fun CommandSender.handle(int: Int, str: String) { // 函数名随意, 但参数需要按顺序放置.
 
@@ -123,6 +125,7 @@ object MyCompositeCommand : CompositeCommand(
     description = "示例指令",
     // prefixOptional = true // 还有更多参数可填, 此处忽略
 ) {
+    // 会自动创建一个 ID 为 "org.example.example-plugin:command.manage" 的权限.
 
     // [参数智能解析]
     //
