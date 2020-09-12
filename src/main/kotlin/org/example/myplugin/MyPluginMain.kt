@@ -9,15 +9,19 @@ import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.unregister
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
+import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
 import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
 import net.mamoe.mirai.console.data.PluginDataExtensions.withEmptyDefault
 import net.mamoe.mirai.console.data.value
+import net.mamoe.mirai.console.permission.PermissionService
+import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.console.util.scopeWith
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.info
@@ -29,6 +33,11 @@ object MyPluginMain : KotlinPlugin(
         "0.1.0"
     )
 ) {
+    val PERMISSION_EXECUTE_1 = PermissionService.INSTANCE.register(
+        permissionId("execute1"),
+        "注册权限的示例"
+    )
+
 
     override fun onEnable() {
         MySetting.reload() // 从数据库自动读取配置实例
@@ -92,6 +101,18 @@ object MySimpleCommand : SimpleCommand(
 
     @Handler
     suspend fun CommandSender.handle(int: Int, str: String) { // 函数名随意, 但参数需要按顺序放置.
+
+        if (this.hasPermission(MyPluginMain.PERMISSION_EXECUTE_1)) {
+            sendMessage("你有 ${MyPluginMain.PERMISSION_EXECUTE_1.id} 权限.")
+        } else {
+            sendMessage(
+                """
+                你没有 ${MyPluginMain.PERMISSION_EXECUTE_1.id} 权限.
+                可以在控制台使用 /permission 管理权限.
+            """.trimIndent()
+            )
+        }
+
         sendMessage("/foo 的第一个参数是 $int, 第二个是 $str")
     }
 }
@@ -120,7 +141,11 @@ object MyCompositeCommand : CompositeCommand(
             it.stackTraceToString()
         } // 失败时返回堆栈信息
 
-        sendMessage("结果: $result")
+
+        // 表示对 this 和 ConsoleCommandSender 一起操作
+        this.scopeWith(ConsoleCommandSender) {
+            sendMessage("结果: $result") // 同时发送给 this@CommandSender 和 ConsoleCommandSender
+        }
     }
 
     @SubCommand
