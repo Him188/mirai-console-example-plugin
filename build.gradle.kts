@@ -9,6 +9,7 @@ group = "org.example"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    mavenLocal()
     jcenter()
     mavenCentral()
 }
@@ -20,8 +21,8 @@ kotlin.sourceSets.all {
 dependencies {
     compileOnly(kotlin("stdlib-jdk8"))
 
-    val core = "1.2.2"
-    val console = "1.0-M4-dev-3"
+    val core = "1.2.3"
+    val console = "1.0-M4"
 
     compileOnly("net.mamoe:mirai-console:$console")
     compileOnly("net.mamoe:mirai-core:$core")

@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.example.myplugin
 
 import com.google.auto.service.AutoService
@@ -5,24 +7,25 @@ import kotlinx.serialization.Serializable
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.unregister
-import net.mamoe.mirai.console.command.CommandPermission
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.command.SimpleCommand
-import net.mamoe.mirai.console.data.*
+import net.mamoe.mirai.console.data.AutoSavePluginConfig
+import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
+import net.mamoe.mirai.console.data.PluginDataExtensions.withEmptyDefault
+import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
+import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
-import net.mamoe.mirai.console.plugin.jvm.SimpleJvmPluginDescription
-import net.mamoe.mirai.console.util.ConsoleExperimentalAPI
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.info
 
 @AutoService(JvmPlugin::class)
 object MyPluginMain : KotlinPlugin(
-    SimpleJvmPluginDescription(
-        "MyPlugin",
+    JvmPluginDescription(
+        "org.example.example-plugin",
         "0.1.0"
     )
 ) {
@@ -56,14 +59,17 @@ object MyPluginData : AutoSavePluginData() {
     var int by value(0) // 可以使用类型推断, 但更推荐使用 `var long: Long by value(0)` 这种定义方式.
 
 
+    // 带默认值的非空 map.
+    // notnullMap[1] 的返回值总是非 null 的 MutableMap<Int, String>
+    var notnullMap
+            by value<MutableMap<Int, MutableMap<Int, String>>>().withEmptyDefault()
+
     // 可将 MutableMap<Long, Long> 映射到 MutableMap<Bot, Long>.
-    // mapKeys 还未稳定, 可能会发生修改. 预计在 1.0-RC 发布稳定版本.
     val botToLongMap: MutableMap<Bot, Long> by value<MutableMap<Long, Long>>().mapKeys(Bot::getInstance, Bot::id)
 }
 
 // 定义一个配置. 所有属性都会被追踪修改, 并自动保存.
 // 配置是插件与用户交互的接口, 但不能用来保存插件的数据.
-// 此 API 还未稳定, 可能会发生修改. 预计在 1.0-RC 发布稳定版本.
 object MySetting : AutoSavePluginConfig() {
     val name by value("test")
 
@@ -74,7 +80,7 @@ object MySetting : AutoSavePluginConfig() {
 
 @Serializable
 data class MyNestedData(
-    val list: List<String>
+    val list: List<String> = listOf()
 )
 
 // 简单指令
@@ -91,10 +97,9 @@ object MySimpleCommand : SimpleCommand(
 }
 
 // 复合指令
-@OptIn(ConsoleExperimentalAPI::class)
 object MyCompositeCommand : CompositeCommand(
     MyPluginMain, "manage",
-    description = "示例指令", permission = MyCustomPermission,
+    description = "示例指令",
     // prefixOptional = true // 还有更多参数可填, 此处忽略
 ) {
 
@@ -123,26 +128,9 @@ object MyCompositeCommand : CompositeCommand(
         sendMessage("/manage list 被调用了")
     }
 
-    @Permission(CommandPermission.Operator::class) // 可额外要求一个权限
     // 支持 Image 类型, 需在聊天中执行此指令.
     @SubCommand
     suspend fun CommandSender.test(image: Image) { // 执行 "/manage test <一张图片>" 时调用这个函数
         sendMessage("/manage image 被调用了, 图片是 ${image.imageId}")
-    }
-}
-
-
-// 定义自定义指令权限判断, 注意, CommandPermission 可能会在 1.0-M4 或 1.0-RC 变动
-object MyCustomPermission : CommandPermission {
-    override fun CommandSender.hasPermission(): Boolean {
-        // 高自由度的权限判定
-
-        /*
-        return if (this is FriendCommandSender) {
-            this.user.id == 123456L
-        } else false
-        */
-
-        return true
     }
 }
