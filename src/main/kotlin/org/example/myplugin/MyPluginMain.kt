@@ -33,10 +33,12 @@ object MyPluginMain : KotlinPlugin(
         "0.1.0"
     )
 ) {
-    val PERMISSION_EXECUTE_1 = PermissionService.INSTANCE.register(
-        permissionId("execute1"),
-        "注册权限的示例"
-    )
+    val PERMISSION_EXECUTE_1 by lazy {
+        PermissionService.INSTANCE.register(
+            permissionId("execute1"),
+            "注册权限的示例"
+        )
+    }
 
 
     override fun onEnable() {
@@ -57,6 +59,7 @@ object MyPluginMain : KotlinPlugin(
 
     override fun onDisable() {
         MySimpleCommand.unregister() // 取消注册指令
+        PERMISSION_EXECUTE_1 // 初始化, 注册权限
     }
 }
 
