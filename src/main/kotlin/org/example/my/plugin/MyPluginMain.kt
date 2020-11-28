@@ -1,8 +1,7 @@
 @file:Suppress("unused")
 
-package org.example.myplugin
+package org.example.my.plugin
 
-import com.google.auto.service.AutoService
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
@@ -15,10 +14,10 @@ import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
 import net.mamoe.mirai.console.data.PluginDataExtensions.withEmptyDefault
+import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.console.permission.PermissionService
 import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
-import net.mamoe.mirai.console.plugin.jvm.JvmPlugin
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.console.util.scopeWith
@@ -26,20 +25,23 @@ import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
 import net.mamoe.mirai.utils.info
 
-@AutoService(JvmPlugin::class)
-object MyPluginMain : KotlinPlugin(
-    JvmPluginDescription(
-        "org.example.example-plugin",
-        "0.1.0"
-    )
-) {
-    val PERMISSION_EXECUTE_1 by lazy {
-        PermissionService.INSTANCE.register(
-            permissionId("execute1"),
-            "注册权限的示例"
-        )
-    }
+/*
+// 定义主类方法 1, 显式提供信息
 
+object MyPluginMain2: KotlinPlugin(
+    JvmPluginDescription(
+        "org.example.my-plugin",
+        "1.0"
+    )
+)
+*/
+
+// 定义主类方法 2, 使用 `JvmPluginDescription.loadFromResource()` 从 resources/plugin.yml 加载
+
+object MyPluginMain : KotlinPlugin(JvmPluginDescription.loadFromResource()) {
+    val PERMISSION_EXECUTE_1 by lazy {
+        PermissionService.INSTANCE.register(permissionId("execute1"), "注册权限的示例")
+    }
 
     override fun onEnable() {
         MySetting.reload() // 从数据库自动读取配置实例
@@ -55,17 +57,18 @@ object MyPluginMain : KotlinPlugin(
         MySetting.count++ // 对 Setting 的改动会自动在合适的时间保存
 
         MySimpleCommand.register() // 注册指令
+
+        PERMISSION_EXECUTE_1 // 初始化, 注册权限
     }
 
     override fun onDisable() {
         MySimpleCommand.unregister() // 取消注册指令
-        PERMISSION_EXECUTE_1 // 初始化, 注册权限
     }
 }
 
 // 定义插件数据
 // 插件
-object MyPluginData : AutoSavePluginData() {
+object MyPluginData : AutoSavePluginData("name") { // "name" 是保存的文件名 (不带后缀)
     var list: MutableList<String> by value(mutableListOf("a", "b")) // mutableListOf("a", "b") 是初始值, 可以省略
     var long: Long by value(0L) // 允许 var
     var int by value(0) // 可以使用类型推断, 但更推荐使用 `var long: Long by value(0)` 这种定义方式.
@@ -82,9 +85,10 @@ object MyPluginData : AutoSavePluginData() {
 
 // 定义一个配置. 所有属性都会被追踪修改, 并自动保存.
 // 配置是插件与用户交互的接口, 但不能用来保存插件的数据.
-object MySetting : AutoSavePluginConfig() {
+object MySetting : AutoSavePluginConfig("MySetting") { // "MySetting" 是保存的文件名 (不带后缀)
     val name by value("test")
 
+    @ValueDescription("数量") // 注释, 将会保存在 MySetting.yml 文件中.
     var count by value(0)
 
     val nested by value<MyNestedData>() // 嵌套类型是支持的
