@@ -10,16 +10,17 @@ import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.command.ConsoleCommandSender
 import net.mamoe.mirai.console.command.SimpleCommand
-import net.mamoe.mirai.console.data.AutoSavePluginConfig
 import net.mamoe.mirai.console.data.AutoSavePluginData
 import net.mamoe.mirai.console.data.PluginDataExtensions.mapKeys
 import net.mamoe.mirai.console.data.PluginDataExtensions.withEmptyDefault
+import net.mamoe.mirai.console.data.ReadOnlyPluginConfig
 import net.mamoe.mirai.console.data.ValueDescription
 import net.mamoe.mirai.console.data.value
 import net.mamoe.mirai.console.permission.PermissionService
 import net.mamoe.mirai.console.permission.PermissionService.Companion.hasPermission
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.console.util.scopeWith
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.message.data.Image
@@ -38,7 +39,10 @@ object MyPluginMain2: KotlinPlugin(
 
 // 定义主类方法 2, 使用 `JvmPluginDescription.loadFromResource()` 从 resources/plugin.yml 加载
 
-object MyPluginMain : KotlinPlugin(JvmPluginDescription.loadFromResource()) {
+object MyPluginMain : KotlinPlugin(
+    @OptIn(ConsoleExperimentalApi::class)
+    JvmPluginDescription.loadFromResource()
+) {
     val PERMISSION_EXECUTE_1 by lazy {
         PermissionService.INSTANCE.register(permissionId("execute1"), "注册权限的示例")
     }
@@ -52,9 +56,6 @@ object MyPluginMain : KotlinPlugin(JvmPluginDescription.loadFromResource()) {
         logger.verbose("Hi: ${MySetting.name}") // 多种日志级别可选
 
         // 请不要使用 println, System.out.println 等标准输出方式. 请总是使用 logger.
-
-
-        MySetting.count++ // 对 Setting 的改动会自动在合适的时间保存
 
         MySimpleCommand.register() // 注册指令
 
@@ -85,11 +86,11 @@ object MyPluginData : AutoSavePluginData("name") { // "name" 是保存的文件�
 
 // 定义一个配置. 所有属性都会被追踪修改, 并自动保存.
 // 配置是插件与用户交互的接口, 但不能用来保存插件的数据.
-object MySetting : AutoSavePluginConfig("MySetting") { // "MySetting" 是保存的文件名 (不带后缀)
+object MySetting : ReadOnlyPluginConfig("MySetting") { // "MySetting" 是保存的文件名 (不带后缀)
     val name by value("test")
 
     @ValueDescription("数量") // 注释, 将会保存在 MySetting.yml 文件中.
-    var count by value(0)
+    val count by value(0)
 
     val nested by value<MyNestedData>() // 嵌套类型是支持的
 }
